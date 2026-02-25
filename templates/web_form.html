@@ -1,0 +1,47 @@
+<style>
+body { font-family: monospace; }
+textarea { width: 100%; }
+</style>
+
+<h2>Create Paste</h2>
+
+<form action="/upload/human" method="post">
+    <textarea name="content" rows="20" required></textarea><br><br>
+    <input type="text" name="ext" placeholder="ext: html, md, js, py, cpp, etc."><br>
+    
+    <fieldset>
+        <input type="radio" name="storage" id="short">
+        <label for="short">Short term storage (a few days)</label><br>
+        <input type="radio" name="storage" id="medium">
+        <label for="short">Medium term storage (month)</label><br>
+        <input type="radio" name="storage" id="long">
+        <label for="short">Long term storage (year+)</label>
+    </fieldset>
+    <fieldset>
+        <input type="checkbox" name="private" id="private">
+        <label for="private">Make the paste private</label><br>
+        <label for="password" id="label-password" style="display: none;">Password: </label>
+        <input type="password" name="password" id="password" style="display: none;" aria-disabled="true">
+    </fieldset>
+    <br>
+    <input type="submit" value="Upload">
+</form>
+
+
+<script>
+let private_checkbox = document.getElementById('private')
+let password = document.getElementById('password')
+let password_label = document.getElementById('label-password')
+
+private_checkbox.addEventListener("change", function() {
+    if (this.checked) {
+        password.ariaDisabled = false
+        password.style.display = 'inline-block'
+        password_label.style.display = 'inline'
+    } else {
+        password.ariaDisabled = true
+        password.style.display = 'none'
+        password_label.style.display = 'none'
+    }
+});
+</script>

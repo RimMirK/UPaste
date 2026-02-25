@@ -93,20 +93,8 @@ INDEX_HTML = """
 """
 
 
-WEB_HTML = """
-<style>
-body { font-family: monospace; }
-textarea { width: 100%; }
-</style>
-
-<h2>Create Paste</h2>
-
-<form action="/upload/human" method="post">
-    <textarea name="content" rows="20" required></textarea><br><br>
-    <input type="text" name="ext" placeholder="ext: html, md, js, py, cpp, etc."><br><br>
-    <input type="submit" value="Upload">
-</form>
-"""
+with open('templates/web_form.html') as f:
+    WEB_HTML = f.read()
 
 
 ERROR_404_TEXT = """
