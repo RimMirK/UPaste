@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="%LANG%">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>%TITLE%</title>
+
+  <!-- ── Шрифты ─────────────────────────────────────────────────────── -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Syne:wght@400;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+
+  <!-- ── KaTeX (математика) ──────────────────────────────────────────── -->
+  <!--
+    arithmatex с generic:True генерирует:
+      inline:  <span class="arithmatex">\(E=mc^2\)</span>
+      block:   <div class="arithmatex">\[...\]</div>
+    auto-render.js должен их найти.
+  -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      renderMathInElement(document.body, {
+        // arithmatex generic выдаёт \(...\) и \[...\]
+        delimiters: [
+          { left: "\\[",  right: "\\]",  display: true  },
+          { left: "\\(",  right: "\\)",  display: false },
+          // на случай если где-то используется $...$ напрямую
+          { left: "$$",   right: "$$",   display: true  },
+          { left: "$",    right: "$",    display: false }
+        ],
+        throwOnError: false,
+        // таргетим только arithmatex-элементы для скорости
+        // (auto-render всё равно пройдёт по всему body)
+      });
+    });
+  </script>
+
+  <!-- ── Mermaid (диаграммы) ─────────────────────────────────────────── -->
+  <!-- v11: ESM-only, грузим через cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs -->
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'dark',
+      themeVariables: {
+        primaryColor:        '#7eb8f7',
+        primaryTextColor:    '#c9d3f0',
+        primaryBorderColor:  '#2d3454',
+        lineColor:           '#5c6585',
+        secondaryColor:      '#181c28',
+        tertiaryColor:       '#0c0e14',
+        background:          '#12151f',
+        nodeBorder:          '#2d3454',
+        clusterBkg:          '#12151f',
+        edgeLabelBackground: '#0c0e14',
+        fontFamily:          'Syne, system-ui, sans-serif',
+      },
+      flowchart:  { curve: 'basis', htmlLabels: true },
+      sequence:   { actorMargin: 80 },
+    });
+  </script>
+
+  <style>
+    /* ═══════════════════════════════════════════════════════════════════
+       TOKENS
+    ═══════════════════════════════════════════════════════════════════ */
+    :root {
+      --bg:         #0c0e14;
+      --bg2:        #12151f;
+      --bg3:        #181c28;
+      --border:     #222840;
+      --border2:    #2d3454;
+
+      --text:       #c9d3f0;
+      --text-muted: #5c6585;
+      --text-dim:   #8892b0;
+
+      --accent:     #7eb8f7;        /* голубой */
+      --accent2:    #c792ea;        /* фиолетовый */
+      --accent3:    #89ddff;        /* циан */
+      --green:      #c3e88d;
+      --yellow:     #ffcb6b;
+      --orange:     #f78c6c;
+      --red:        #ff5370;
+      --teal:       #80cbc4;
+      --pink:       #f07178;
+
+      --font-body:  'Spectral', Georgia, 'Times New Roman', serif;
+      --font-ui:    'Syne', system-ui, sans-serif;
+      --font-mono:  'Fira Code', 'Cascadia Code', monospace;
+
+      --radius:     6px;
+      --radius-lg:  12px;
+
+      --sidebar-w:  280px;
+      --content-max: 800px;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       RESET
+    ═══════════════════════════════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; font-size: 16px; }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       LAYOUT
+    ═══════════════════════════════════════════════════════════════════ */
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 1.0625rem;
+      line-height: 1.8;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Боковой TOC */
+    #sidebar {
+      width: var(--sidebar-w);
+      flex-shrink: 0;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 48px 20px 48px 28px;
+      border-right: 1px solid var(--border);
+      background: var(--bg2);
+    }
+    #sidebar-title {
+      font-family: var(--font-ui);
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    #toc-container .toc {
+      font-size: 0.8rem;
+      line-height: 1.5;
+    }
+    #toc-container ul {
+      list-style: none;
+      padding-left: 0;
+    }
+    #toc-container ul ul {
+      padding-left: 14px;
+      border-left: 1px solid var(--border);
+      margin-left: 4px;
+    }
+    #toc-container li { margin: 3px 0; }
+    #toc-container a {
+      display: block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-family: var(--font-mono);
+      font-size: 0.76rem;
+      transition: color 0.15s, background 0.15s;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #toc-container a:hover { color: var(--accent); background: var(--bg3); }
+    #toc-container a.active { color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+
+    /* Основной контент */
+    #main {
+      flex: 1;
+      min-width: 0;
+      padding: 60px 72px 120px;
+    }
+    .md-body {
+      max-width: var(--content-max);
+      margin: 0 auto;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       TYPOGRAPHY
+    ═══════════════════════════════════════════════════════════════════ */
+    h1, h2, h3, h4, h5, h6 {
+      font-family: var(--font-ui);
+      line-height: 1.25;
+      font-weight: 700;
+      margin: 2.2em 0 0.7em;
+      position: relative;
+      scroll-margin-top: 24px;
+    }
+    h1 { font-size: 2.5rem;  color: #fff; margin-top: 0; letter-spacing: -0.02em; }
+    h2 { font-size: 1.65rem; color: #dde3f9;
+         padding-bottom: 0.35em;
+         border-bottom: 1px solid var(--border); }
+    h3 { font-size: 1.2rem;  color: var(--accent); }
+    h4 { font-size: 1rem;    color: var(--accent2); }
+    h5 { font-size: 0.9rem;  color: var(--teal); text-transform: uppercase; letter-spacing: 0.06em; }
+    h6 { font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+
+    /* Якоря заголовков */
+    .headerlink {
+      opacity: 0;
+      margin-left: 0.4em;
+      font-size: 0.65em;
+      color: var(--text-muted);
+      text-decoration: none;
+      vertical-align: middle;
+      transition: opacity 0.15s;
+    }
+    h1:hover .headerlink, h2:hover .headerlink,
+    h3:hover .headerlink, h4:hover .headerlink,
+    h5:hover .headerlink, h6:hover .headerlink { opacity: 1; }
+
+    p { margin: 0 0 1.25em; }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    a:hover { border-color: var(--accent); }
+
+    strong { font-weight: 600; color: #e0e8ff; }
+    em     { font-style: italic; color: #b8c8ee; }
+    del    { color: var(--red); text-decoration: line-through; }
+    ins    { color: var(--green); text-decoration: underline; }
+    mark   { background: color-mix(in srgb, var(--yellow) 20%, transparent); color: var(--yellow); padding: 1px 4px; border-radius: 3px; }
+    sub, sup { font-family: var(--font-mono); font-size: 0.75em; }
+
+    hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 2.5em 0;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       БЛОКИ КОДА (Pygments)
+       Pygments CSS вставляется через %PYGMENTS_CSS% — уже переписан
+       так что все селекторы .highlight → div.highlight,
+       и глобальный pre{} удалён. Инлайн code.highlight не затронут.
+    ═══════════════════════════════════════════════════════════════════ */
+    %PYGMENTS_CSS%
+
+    div.highlight, .codehilite {
+      background: #0a0c12 !important;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      margin: 1.8em 0;
+      position: relative;
+    }
+    div.highlight::before {
+      content: attr(data-lang);
+      display: block;
+      padding: 8px 16px 8px 20px;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      background: var(--bg3);
+      border-bottom: 1px solid var(--border);
+    }
+    div.highlight pre, .codehilite pre {
+      padding: 20px 24px;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 0.875em;
+      line-height: 1.7;
+      margin: 0;
+      background: transparent !important;
+    }
+    div.highlight pre code, .codehilite pre code {
+      all: unset;
+      font-family: var(--font-mono);
+      font-size: inherit;
+      line-height: inherit;
+      color: inherit;
+      background: transparent;
+      padding: 0;
+      border: none;
+      white-space: pre;
+      display: inline;
+    }
+    div.highlight .linenodiv pre { padding: 20px 0 20px 16px; color: var(--border2); user-select: none; }
+    div.highlight table td { padding: 0; }
+    div.highlight table { width: 100%; border: none; }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       INLINE CODE
+       Pygments CSS больше НЕ попадает на code.highlight (только div.highlight).
+       Простые правила без !important.
+    ═══════════════════════════════════════════════════════════════════ */
+    :not(pre) > code {
+      font-family: var(--font-mono);
+      font-size: 0.855em;
+      background: var(--bg3);
+      color: var(--accent3);
+      padding: 2px 7px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       ТАБЛИЦЫ
+    ═══════════════════════════════════════════════════════════════════ */
+    .md-body table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.8em 0;
+      font-size: 0.92em;
+      overflow: hidden;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+    .md-body thead tr {
+      background: var(--bg3);
+    }
+    .md-body th {
+      font-family: var(--font-ui);
+      font-size: 0.72em;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      color: var(--accent);
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 2px solid var(--border2);
+    }
+    .md-body td {
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .md-body tbody tr:last-child td { border-bottom: none; }
+    .md-body tbody tr:nth-child(even) { background: color-mix(in srgb, var(--bg3) 50%, transparent); }
+    .md-body tbody tr:hover td { background: var(--bg3); }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       BLOCKQUOTE
+    ═══════════════════════════════════════════════════════════════════ */
+    blockquote {
+      margin: 1.8em 0;
+      padding: 18px 24px;
+      border-left: 3px solid var(--accent2);
+      background: color-mix(in srgb, var(--accent2) 6%, var(--bg2));
+      border-radius: 0 var(--radius) var(--radius) 0;
+      color: var(--text-dim);
+      font-style: italic;
+    }
+    blockquote p:last-child { margin: 0; }
+    blockquote strong { color: var(--accent2); }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       СПИСКИ
+    ═══════════════════════════════════════════════════════════════════ */
+    ul, ol { padding-left: 1.7em; margin: 0 0 1.2em; }
+    li { margin: 0.35em 0; }
+    li > ul, li > ol { margin-bottom: 0.2em; margin-top: 0.2em; }
+
+    /* ── Task list ──────────────────────────────────────────────────── */
+    .task-list-item {
+      list-style: none;
+      margin-left: -1.7em;
+      padding-left: 2.2em;
+      position: relative;
+    }
+    .task-list-item input[type="checkbox"] {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 15px; height: 15px;
+      border: 2px solid var(--border2);
+      border-radius: 3px;
+      margin-right: 8px;
+      vertical-align: middle;
+      cursor: pointer;
+      position: relative; top: -1px;
+      transition: all 0.15s;
+      background: var(--bg3);
+    }
+    .task-list-item input:checked {
+      background: var(--green);
+      border-color: var(--green);
+    }
+    .task-list-item input:checked::after {
+      content: '';
+      position: absolute;
+      left: 3px; top: 0px;
+      width: 5px; height: 9px;
+      border: 2px solid #000;
+      border-top: none;
+      border-left: none;
+      transform: rotate(45deg);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       ADMONITIONS  (!!! note / !!! warning / etc.)
+    ═══════════════════════════════════════════════════════════════════ */
+    .admonition {
+      margin: 1.8em 0;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .admonition-title {
+      padding: 10px 16px;
+      font-family: var(--font-ui);
+      font-size: 0.72em;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .admonition-title::before { font-size: 1.1em; }
+    .admonition > p, .admonition > ul, .admonition > ol,
+    .admonition > blockquote { padding: 12px 16px; margin: 0; }
+
+    /* Типы */
+    .admonition.note,    .admonition.info     { border-color: var(--accent);  }
+    .admonition.tip,     .admonition.success  { border-color: var(--green);   }
+    .admonition.warning, .admonition.caution  { border-color: var(--yellow);  }
+    .admonition.danger,  .admonition.error    { border-color: var(--red);     }
+    .admonition.example                       { border-color: var(--accent2); }
+    .admonition.quote,   .admonition.cite     { border-color: var(--teal);    }
+    .admonition.abstract, .admonition.summary { border-color: var(--pink);    }
+    .admonition.bug                           { border-color: var(--orange);  }
+
+    .admonition.note    .admonition-title, .admonition.info    .admonition-title { background: color-mix(in srgb, var(--accent)  12%, var(--bg2)); color: var(--accent);  }
+    .admonition.tip     .admonition-title, .admonition.success .admonition-title { background: color-mix(in srgb, var(--green)   12%, var(--bg2)); color: var(--green);   }
+    .admonition.warning .admonition-title, .admonition.caution .admonition-title { background: color-mix(in srgb, var(--yellow)  12%, var(--bg2)); color: var(--yellow);  }
+    .admonition.danger  .admonition-title, .admonition.error   .admonition-title { background: color-mix(in srgb, var(--red)     12%, var(--bg2)); color: var(--red);     }
+    .admonition.example .admonition-title                                         { background: color-mix(in srgb, var(--accent2) 12%, var(--bg2)); color: var(--accent2); }
+    .admonition.quote   .admonition-title, .admonition.cite    .admonition-title  { background: color-mix(in srgb, var(--teal)   12%, var(--bg2)); color: var(--teal);    }
+    .admonition.bug     .admonition-title                                         { background: color-mix(in srgb, var(--orange) 12%, var(--bg2)); color: var(--orange);  }
+
+    /* Иконки */
+    .admonition.note    .admonition-title::before { content: "ℹ"; }
+    .admonition.info    .admonition-title::before { content: "ℹ"; }
+    .admonition.tip     .admonition-title::before { content: "💡"; }
+    .admonition.success .admonition-title::before { content: "✓"; }
+    .admonition.warning .admonition-title::before { content: "⚠"; }
+    .admonition.caution .admonition-title::before { content: "⚠"; }
+    .admonition.danger  .admonition-title::before { content: "🔥"; }
+    .admonition.error   .admonition-title::before { content: "✕"; }
+    .admonition.example .admonition-title::before { content: "◆"; }
+    .admonition.bug     .admonition-title::before { content: "🐛"; }
+    .admonition.quote   .admonition-title::before { content: "❝"; }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       DETAILS / SUMMARY
+    ═══════════════════════════════════════════════════════════════════ */
+    details {
+      margin: 1.2em 0;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg2);
+      overflow: hidden;
+    }
+    summary {
+      padding: 12px 18px;
+      font-family: var(--font-ui);
+      font-size: 0.88em;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--accent2);
+      user-select: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      list-style: none;
+      transition: background 0.15s;
+    }
+    summary:hover { background: var(--bg3); }
+    summary::before {
+      content: "▶";
+      font-size: 0.7em;
+      transition: transform 0.2s;
+      color: var(--text-muted);
+    }
+    details[open] summary::before { transform: rotate(90deg); }
+    details[open] summary { border-bottom: 1px solid var(--border); }
+    details > *:not(summary) { padding: 14px 18px; }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       TABS (tabbed / blocks.tab)
+    ═══════════════════════════════════════════════════════════════════ */
+    .tabbed-set {
+      margin: 1.8em 0;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .tabbed-labels {
+      display: flex;
+      flex-wrap: wrap;
+      background: var(--bg3);
+      border-bottom: 1px solid var(--border);
+      padding: 0 8px;
+    }
+    .tabbed-labels > label {
+      padding: 10px 18px;
+      font-family: var(--font-ui);
+      font-size: 0.78em;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: color 0.15s, border-color 0.15s;
+      user-select: none;
+    }
+    .tabbed-labels > label:hover { color: var(--text); }
+    .tabbed-set > input { display: none; }
+    .tabbed-content { padding: 20px 24px; }
+    .tabbed-block { display: none; }
+
+    /* Автоматически показываем первую вкладку и активируем label */
+    .tabbed-set > input:nth-child(1):checked ~ .tabbed-content .tabbed-block:nth-child(1),
+    .tabbed-set > input:nth-child(2):checked ~ .tabbed-content .tabbed-block:nth-child(2),
+    .tabbed-set > input:nth-child(3):checked ~ .tabbed-content .tabbed-block:nth-child(3),
+    .tabbed-set > input:nth-child(4):checked ~ .tabbed-content .tabbed-block:nth-child(4),
+    .tabbed-set > input:nth-child(5):checked ~ .tabbed-content .tabbed-block:nth-child(5) { display: block; }
+
+    .tabbed-set > input:nth-child(1):checked ~ .tabbed-labels label:nth-child(1),
+    .tabbed-set > input:nth-child(2):checked ~ .tabbed-labels label:nth-child(2),
+    .tabbed-set > input:nth-child(3):checked ~ .tabbed-labels label:nth-child(3),
+    .tabbed-set > input:nth-child(4):checked ~ .tabbed-labels label:nth-child(4),
+    .tabbed-set > input:nth-child(5):checked ~ .tabbed-labels label:nth-child(5) {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       KEYS  (++ctrl+s++)
+    ═══════════════════════════════════════════════════════════════════ */
+    .keys {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-family: var(--font-mono);
+      font-size: 0.82em;
+      white-space: nowrap;
+    }
+    .key {
+      display: inline-block;
+      padding: 2px 8px;
+      background: var(--bg3);
+      border: 1px solid var(--border2);
+      border-bottom: 3px solid var(--border2);
+      border-radius: 4px;
+      color: var(--text);
+      line-height: 1.5;
+      transition: border-bottom-width 0.1s, transform 0.1s;
+    }
+    .key:active { border-bottom-width: 1px; transform: translateY(2px); }
+    .keys .sep { color: var(--text-muted); }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       PROGRESS BAR
+    ═══════════════════════════════════════════════════════════════════ */
+    .progress {
+      height: 8px;
+      background: var(--bg3);
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      margin: 0.4em 0;
+    }
+    .progress-bar {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transition: width 0.5s ease;
+    }
+    .progress-label {
+      font-family: var(--font-mono);
+      font-size: 0.75em;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    /* Уровни цвета */
+    .progress-bar.progress-20   { background: var(--red); }
+    .progress-bar.progress-40   { background: var(--orange); }
+    .progress-bar.progress-60   { background: var(--yellow); }
+    .progress-bar.progress-80   { background: var(--green); }
+    .progress-bar.progress-100  { background: var(--teal); }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       CRITIC MARKUP
+    ═══════════════════════════════════════════════════════════════════ */
+    .critic-mark  { background: color-mix(in srgb, var(--yellow)  25%, transparent); color: var(--yellow); }
+    .critic-ins   { background: color-mix(in srgb, var(--green)   15%, transparent); color: var(--green);  text-decoration: underline; }
+    .critic-del   { background: color-mix(in srgb, var(--red)     15%, transparent); color: var(--red);    text-decoration: line-through; }
+    .critic-com   { background: color-mix(in srgb, var(--accent2) 15%, transparent); color: var(--accent2); font-style: italic; }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       FOOTNOTES
+    ═══════════════════════════════════════════════════════════════════ */
+    .footnote {
+      margin-top: 3em;
+      padding-top: 1.2em;
+      border-top: 1px solid var(--border);
+      font-size: 0.85em;
+      color: var(--text-dim);
+    }
+    .footnote ol { padding-left: 1.5em; }
+    .footnote li { margin: 0.5em 0; }
+    .footnote-backref { margin-left: 6px; font-size: 0.9em; }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       DEFINITION LIST
+    ═══════════════════════════════════════════════════════════════════ */
+    dl { margin: 1.2em 0; }
+    dt {
+      font-family: var(--font-ui);
+      font-weight: 700;
+      font-size: 0.9em;
+      color: var(--accent3);
+      margin-top: 1em;
+    }
+    dd {
+      margin-left: 1.6em;
+      color: var(--text-dim);
+      padding-left: 1em;
+      border-left: 2px solid var(--border);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       WIKILINKS
+    ═══════════════════════════════════════════════════════════════════ */
+    a.wikilink {
+      color: var(--accent2);
+      border-bottom-style: dashed;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       MERMAID
+    ═══════════════════════════════════════════════════════════════════ */
+    .mermaid {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin: 1.8em 0;
+      text-align: center;
+      overflow-x: auto;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       ABBR
+    ═══════════════════════════════════════════════════════════════════ */
+    abbr {
+      text-decoration: underline dotted var(--text-muted);
+      cursor: help;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       KATEX / ARITHMATEX
+    ═══════════════════════════════════════════════════════════════════ */
+    .arithmatex {
+      overflow-x: auto;
+      padding: 1em 0;
+    }
+    .katex-display {
+      margin: 1.5em 0;
+      padding: 16px 24px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow-x: auto;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       MAGICLINKS
+    ═══════════════════════════════════════════════════════════════════ */
+    a.magiclink-compare, a.magiclink-commit,
+    a.magiclink-issue, a.magiclink-pull {
+      font-family: var(--font-mono);
+      font-size: 0.87em;
+      color: var(--green);
+    }
+    a.magiclink-mention { color: var(--orange); }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       EMOJI  — pymdownx генерирует <img class="twemoji">, не .emoji
+    ═══════════════════════════════════════════════════════════════════ */
+    img.twemoji, img.emoji, .emoji {
+      width: 1.25em !important;
+      height: 1.25em !important;
+      max-width: 1.25em !important;
+      max-height: 1.25em !important;
+      min-width: unset !important;
+      min-height: unset !important;
+      vertical-align: -0.25em;
+      display: inline !important;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       META HEADER (из YAML шапки)
+    ═══════════════════════════════════════════════════════════════════ */
+    #doc-meta {
+      font-family: var(--font-mono);
+      font-size: 0.78em;
+      color: var(--text-muted);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      margin-bottom: 2em;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      background: var(--bg2);
+    }
+    #doc-meta span { display: flex; gap: 6px; }
+    #doc-meta .meta-key { color: var(--accent2); }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       SCROLLBAR
+    ═══════════════════════════════════════════════════════════════════ */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       PRINT
+    ═══════════════════════════════════════════════════════════════════ */
+    @media print {
+      #sidebar { display: none; }
+      body { background: #fff; color: #000; }
+      a { color: #000; border: none; }
+      .highlight { border: 1px solid #ccc; }
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       RESPONSIVE
+    ═══════════════════════════════════════════════════════════════════ */
+    @media (max-width: 960px) {
+      #sidebar { display: none; }
+      #main { padding: 36px 28px 80px; }
+    }
+    @media (max-width: 640px) {
+      h1 { font-size: 1.8rem; }
+      #main { padding: 24px 18px 60px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Боковая панель с TOC ────────────────────────────────────────── -->
+  <aside id="sidebar">
+    <div id="sidebar-title">Table of contents</div>
+    <nav id="toc-container">%TOC%</nav>
+  </aside>
+
+  <!-- ── Основной контент ────────────────────────────────────────────── -->
+  <main id="main">
+    <article class="md-body">
+      %BODY%
+    </article>
+  </main>
+
+  <!-- ── Активная ссылка в TOC при скролле ────────────────────────────── -->
+  <script>
+    (function() {
+      const tocLinks = document.querySelectorAll('#toc-container a');
+      if (!tocLinks.length) return;
+
+      const headings = Array.from(document.querySelectorAll(
+        '.md-body h1[id], .md-body h2[id], .md-body h3[id], .md-body h4[id]'
+      ));
+
+      function onScroll() {
+        const scrollY = window.scrollY + 96;
+        let active = headings[0];
+        for (const h of headings) {
+          if (h.offsetTop <= scrollY) active = h;
+        }
+        tocLinks.forEach(a => a.classList.remove('active'));
+        if (active) {
+          const match = document.querySelector(`#toc-container a[href="#${active.id}"]`);
+          if (match) match.classList.add('active');
+        }
+      }
+
+      window.addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+    })();
+  </script>
+
+  <!-- ── data-lang на блоках кода ─────────────────────────────────────── -->
+  <script>
+    document.querySelectorAll('.highlight, .codehilite').forEach(el => {
+      const langClass = [...el.classList].find(c => c.startsWith('language-'));
+      if (langClass) el.dataset.lang = langClass.replace('language-', '');
+    });
+  </script>
+
+</body>
+</html>

@@ -11,8 +11,9 @@ class Template(str):
 
 
 def get_template(name, html=True):
-    with open(Path('templates', name + ('.html' if html else ''))) as f:
-        return Template(f.read())
+    with open(Path('templates', name + ('.html' if html else '')), encoding='utf-8') as f:
+        r = Template(f.read())
+    return r
     
 
 INDEX_HTML = get_template('index')
@@ -20,3 +21,4 @@ WEB_HTML = get_template('web_form')
 UPLOAD_HUMAN_HTML = get_template('upload')
 EDIT_FORM_HTML = get_template('edit_form')
 ERROR_404_TEXT = get_template('404.txt', False)
+MARKDOWN_TEMPLATE = get_template('markdown')

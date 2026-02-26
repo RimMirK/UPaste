@@ -11,6 +11,7 @@ from contextlib import asynccontextmanager
 
 from database import DB
 from texts import *
+from markdown_renderer import render_markdown
 
 db = DB("database.db")
 
@@ -133,23 +134,13 @@ async def view(paste_id: str):
     ext = (ext or "").lower()
 
     # ================= HTML =================
-    if ext == "html":
+    if ext == "html":   
         return HTMLResponse(content)
 
     # ================= MARKDOWN =================
     if ext in {"md", "mdown", "markd", "markdown"}:
-        rendered = markdown.markdown(
-            content,
-            extensions=["fenced_code", "codehilite"]
-        )
-
-        return HTMLResponse(f"""
-        <style>
-            body {{ font-family: sans-serif; padding:40px; }}
-            {PYGMENTS_CSS}
-        </style>
-        {rendered}
-        """)
+        
+        return HTMLResponse(render_markdown(content))
 
     # ================= CODE =================
     try:
