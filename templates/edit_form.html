@@ -1,0 +1,13 @@
+<style>
+    body { font-family: monospace; }
+    textarea { width:100%; height:400px; }
+</style>
+
+<h2>Edit paste</h2>
+
+<form method="post" action="/edit/human/%PASTE_ID%">
+    <textarea name="content">{content}</textarea><br><br>
+    <input type="text" name="ext" value="%EXT%" placeholder="ext: html, md, js, py, cpp, etc.">
+    <input type="text" name="token" value="%TOKEN%" placeholder="Token" size="24">
+    <input type="submit" value="Save">
+</form>

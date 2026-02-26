@@ -34,7 +34,7 @@ PYGMENTS_CSS = formatter.get_style_defs(".highlight")
 
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
-    return INDEX_HTML.replace("%BASE_URL%", str(request.base_url))
+    return INDEX_HTML.format(base_url=request.base_url)
 
 
 # =========================
@@ -99,7 +99,7 @@ async def upload_human(
 
     return UPLOAD_HUMAN_HTML.format(
         status='upload',
-        base_url=str(request.base_url).removesuffix('/'),
+        base_url=str(request.base_url),
         paste_id=paste_id,
         token=token
     )

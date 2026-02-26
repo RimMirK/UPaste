@@ -1,0 +1,39 @@
+<style>
+    body { font-family: monospace; }
+    .box { margin-top:20px; padding:15px; border:1px solid #ccc; }
+</style>
+
+<h2>Paste %STATUS% successfully</h2>
+
+<div class="box">
+    <b>View:</b><br>
+    <a href="%BASE_URL%%PASTE_ID%">%BASE_URL%%PASTE_ID%</a>
+</div>
+
+<div class="box">
+    <b>Raw:</b><br>
+    <a href="%BASE_URL%raw/%PASTE_ID%">%BASE_URL%raw/%PASTE_ID%</a>
+</div>
+
+<div class="box">
+    <b>Delete URL:</b><br>
+    <a href="%BASE_URL%delete/%PASTE_ID%?token=%TOKEN%">
+    %BASE_URL%delete/%PASTE_ID%?token=%TOKEN%
+    </a>
+</div>
+
+<div class="box">
+    <b>Edit URL:</b><br>
+    <a href="%BASE_URL%edit/%PASTE_ID%?token=%TOKEN%">
+    %BASE_URL%edit/%PASTE_ID%?token=%TOKEN%
+    </a>
+</div>
+
+<div class="box">
+    <b>Token:</b><br>
+    %TOKEN%
+</div>
+
+<div class="box">
+    <a href="/web">Upload another paste</a>
+</div>
